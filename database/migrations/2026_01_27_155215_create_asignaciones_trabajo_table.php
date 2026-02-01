@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('asignaciones_trabajo', function (Blueprint $table) {
             $table->id(); 
-            $table->foreignId('orden_produccion_id')->constrained('ordenes_produccion');
+            $table->foreignId('orden_item_id')->constrained('orden_items')->cascadeOnDelete();
             $table->foreignId('operario_id')->constrained('operarios');
             $table->integer('cantidad_asignada'); 
             $table->date('fecha_asignacion');
