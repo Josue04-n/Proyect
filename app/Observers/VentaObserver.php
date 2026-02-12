@@ -12,16 +12,13 @@ use Filament\Notifications\Notification;
 class VentaObserver
 {
     /**
-     * Se ejecuta cuando se actualiza una venta existente.
+     * 
      */
     public function updated(Venta $venta): void
     {
-        // CASO A: De "PENDIENTE" a "PAGADO"
-        // (El cliente paga. Descontamos stock y metemos plata a la caja)
         if ($venta->getOriginal('estado_pago') === 'pendiente' && $venta->estado_pago === 'pagado') {
             
             DB::transaction(function () use ($venta) {
-                // 1. Ingreso de dinero a Caja
                 MovimientoCaja::create([
                     'fecha' => now(),
                     'tipo' => 'ingreso',
@@ -32,7 +29,6 @@ class VentaObserver
                     'updated_by' => auth()->id(),
                 ]);
 
-                // 2. Descuento de stock
                 $detalles = DetalleVenta::where('venta_id', $venta->id)->get();
 
                 foreach ($detalles as $detalle) {
