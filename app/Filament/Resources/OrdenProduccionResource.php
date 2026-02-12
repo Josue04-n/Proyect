@@ -88,8 +88,8 @@ class OrdenProduccionResource extends Resource
                             Select::make('estado')
                                 ->options([
                                     'pendiente' => 'Pendiente',
-                                    'en_proceso' => 'En Proceso',
                                     'parcial' => 'Parcial',
+                                    'en_proceso' => 'En Proceso',
                                     'finalizada' => 'Finalizada',
                                     'cerrada' => 'Cerrada',   
                                 ])
@@ -150,27 +150,27 @@ class OrdenProduccionResource extends Resource
     {
         return $table
             ->columns([
-                // 1. ID DE ORDEN (Searchable restaurado)
+                // ORDEN 
                 TextColumn::make('id')
                     ->label('#')
                     ->sortable()
-                    ->searchable(), // <--- BUSCADOR RESTAURADO
+                    ->searchable(), 
 
-                // 2. CLIENTE (Searchable restaurado)
+                // CLIENTE 
                 TextColumn::make('cliente.nombre_completo')
                     ->label('Cliente')
                     ->searchable(['primer_nombre', 'apellido_paterno', 'razon_social']) // <--- BUSCADOR RESTAURADO
                     ->sortable(),
 
-                // 3. TOTAL PRENDAS
+                // TOTAL PRENDAS
                 TextColumn::make('items_sum_cantidad')
                     ->sum('items', 'cantidad')
                     ->label('Prendas')
                     ->alignCenter()
                     ->badge()
-                    ->toggleable(), // <--- CAJONCITO RESTAURADO
+                    ->toggleable(), 
 
-                // 4. FECHAS
+                //FECHAS
                 TextColumn::make('fecha_recepcion')
                     ->label('Recepción')
                     ->date('d/m/y')
@@ -182,26 +182,28 @@ class OrdenProduccionResource extends Resource
                     ->date('d/m/y')
                     ->sortable()
                     ->color(fn ($record) => $record->fecha_entrega_estimada < now() && $record->estado !== 'entregada' ? 'danger' : null)
-                    ->toggleable(), // <--- CAJONCITO RESTAURADO
+                    ->toggleable(),
 
-                // 5. ESTADO EDITABLE
-                SelectColumn::make('estado')
-                    ->options([
-                        'pendiente'  => 'Pendiente',
-                        'en_proceso' => 'En Proceso',
-                        'parcial'    => 'Parcial',
-                        'finalizada' => 'Finalizada',
-                        'cerrada'    => 'Cerrada',
-                    ])
-                    ->selectablePlaceholder(false)
+                // ESTADO EDITABLE
+                TextColumn::make('estado')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pendiente' => 'warning',  
+                        'parcial' => 'info',     
+                        'en_proceso' => 'primary',  
+                        'finalizada' => 'success',  
+                        'cerrada' => 'danger',   
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => ucfirst(str_replace('_', ' ', $state)))
                     ->sortable()
                     ->toggleable(),
 
                 
-                // 6. CREADO POR (Auditoría)
+                // CREADO POR 
                 TextColumn::make('createdBy.name')
                     ->label('Creado Por')
-                    ->toggleable(isToggledHiddenByDefault: true), // <--- CAJONCITO RESTAURADO
+                    ->toggleable(isToggledHiddenByDefault: true), 
             ])
             ->defaultSort('created_at', 'desc')
 
@@ -222,8 +224,14 @@ class OrdenProduccionResource extends Resource
                     ->color('info')
                     ->modalWidth('xl'),
                 
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn (OrdenProduccion $record) => $record->estado === 'pendiente')
+                    ->tooltip(fn (OrdenProduccion $record) => $record->estado === 'pendiente' ? 'Eliminar Orden' : 'No se puede eliminar una orden en proceso o finalizada'),
+                DeleteAction::make()
+                    ->visible(fn (OrdenProduccion $record) => $record->estado === 'pendiente')
+                    ->tooltip(fn (OrdenProduccion $record) => $record->estado === 'pendiente' ? 'Eliminar Orden' : 'No se puede eliminar una orden en proceso o finalizada'),
             ])
+
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

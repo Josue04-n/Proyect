@@ -106,7 +106,8 @@ class VentaResource extends Resource
                     ->schema([
                         Repeater::make('detalles')
                             ->hiddenLabel()
-                            ->relationship()
+                            // REMOVIDO: ->relationship() para que los datos lleguen a $data['detalles']
+                            // El SP se encarga de guardar los detalles
                             ->schema([
                                 Grid::make(12)->schema([
                                     
@@ -198,6 +199,7 @@ class VentaResource extends Resource
                                 ->readOnly()
                                 ->dehydrated(),
 
+                            
                             TextInput::make('total')
                                 ->label('TOTAL')
                                 ->prefix('$')
@@ -283,6 +285,8 @@ class VentaResource extends Resource
                         'pendiente' => 'warning',
                         'anulado' => 'danger',
                     }),
+                
+                
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
@@ -295,12 +299,8 @@ class VentaResource extends Resource
 
                 DeleteAction::make()
                     ->visible(fn (Venta $record) => $record->estado_pago !== 'pagado'),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
+
     }
 
     public static function getRelations(): array { return []; }

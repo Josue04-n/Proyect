@@ -110,7 +110,6 @@ class PagoOperarioResource extends Resource
                             ->options([
                                 'Efectivo' => 'Efectivo',
                                 'Transferencia' => 'Transferencia',
-                                'Cheque' => 'Cheque',
                             ])
                             ->default('Efectivo')
                             ->required(),
@@ -151,8 +150,8 @@ class PagoOperarioResource extends Resource
                     ->sortable(),
 
                 TextColumn::make('usuarioPaga.name')
-                    ->label('Pagado por')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Pagado por'),
+                    
             ])
             ->defaultSort('fecha_pago', 'desc')
             ->filters([
@@ -168,8 +167,8 @@ class PagoOperarioResource extends Resource
                     ]),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                //EditAction::make(),
+                //DeleteAction::make(),
             ]);
     }
 

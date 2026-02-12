@@ -18,6 +18,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Get; 
+use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
 
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Actions\DeleteAction;
@@ -144,16 +146,23 @@ class TransferenciaInventarioResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->actions([
                 DeleteAction::make()
-                    ->before(function (TransferenciaInventario $record) {
-                        $record->prendaTienda->increment('stock_actual', $record->cantidad);
-                        $itemDestino = PrendaTienda::where('local_id', $record->destino_local_id)
-                            ->where('tipo_prenda_id', $record->prendaTienda->tipo_prenda_id)
-                            ->where('talla', $record->prendaTienda->talla)
-                            ->where('color', $record->prendaTienda->color)
-                            ->first();
+                    ->label('Anular / Reversar')
+                    ->modalHeading('¿Anular Transferencia?')
+                    ->modalDescription('Esto devolverá el stock al origen y lo descontará del destino. Esta acción no se puede deshacer.')
+                    ->action(function (TransferenciaInventario $record) {
+                        try {
+                            DB::statement('CALL SP_ANULAR_TRANSFERENCIA(?)', [$record->id]);
                             
-                        if ($itemDestino) {
-                            $itemDestino->decrement('stock_actual', $record->cantidad);
+                            Notification::make()
+                                ->title('Transferencia Anulada')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Error al anular')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
                         }
                     }),
             ]);

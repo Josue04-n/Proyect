@@ -5,25 +5,26 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EntregaProduccionResource\Pages;
 use App\Models\EntregaProduccion;
 use App\Models\AsignacionTrabajo;
-use App\Models\Tarifa; // Importante para buscar precios
+use App\Models\Tarifa; // IMPORTANTE: Restaurado para buscar precios
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-// Helpers para la lógica reactiva
+// Helpers
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 
+// Componentes Visuales
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
-
 use Filament\Tables\Columns\TextColumn;
+
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\DeleteAction;
 
@@ -46,31 +47,40 @@ class EntregaProduccionResource extends Resource
                 Section::make('Registro de Entrega')
                     ->schema([
                         Grid::make(2)->schema([
-                            // 1. SELECCIONAR ASIGNACIÓN (Reactivo)
+                            // 1. SELECCIONAR ASIGNACIÓN (Reactivo y Filtrado Inteligente)
                             Select::make('asignacion_trabajo_id')
                                 ->label('Trabajo Asignado')
                                 ->options(function () {
-                                    // Mostramos solo asignaciones pendientes o en proceso
                                     return AsignacionTrabajo::whereIn('estado', ['pendiente', 'en_proceso'])
-                                        ->with(['operario', 'ordenItem.tipoPrenda']) // Eager loading
+                                        ->with(['operario', 'ordenItem.tipoPrenda'])
                                         ->get()
+                                        ->filter(function ($item) {
+                                            // Filtramos para que solo salgan las asignaciones que AÚN TIENEN prendas pendientes de entregar
+                                            $entregado = EntregaProduccion::where('asignacion_trabajo_id', $item->id)->sum('cantidad_entregada');
+                                            return ($item->cantidad_asignada - $entregado) > 0;
+                                        })
                                         ->mapWithKeys(function ($item) {
-                                            return [$item->id => "{$item->operario->primer_nombre} - {$item->ordenItem->tipoPrenda->nombre} ({$item->cantidad_asignada} pzas)"];
+                                            // Calculamos el restante para mostrarlo en el texto
+                                            $entregado = EntregaProduccion::where('asignacion_trabajo_id', $item->id)->sum('cantidad_entregada');
+                                            $restante = $item->cantidad_asignada - $entregado;
+                                            return [$item->id => "{$item->operario->primer_nombre} - {$item->ordenItem->tipoPrenda->nombre} (Faltan: {$restante} pzas)"];
                                         });
                                 })
                                 ->searchable()
                                 ->required()
                                 ->live() // <--- ACTIVA LA MAGIA
                                 ->afterStateUpdated(function ($state, Set $set) {
-                                    // Lógica: Buscar la tarifa de la prenda asignada
+                                    // Limpiamos los campos al cambiar de trabajo
+                                    $set('cantidad_entregada', null);
+                                    $set('monto_generado', null);
+
                                     if (!$state) return;
                                     
+                                    // --- LOGICA RESTAURADA: Buscar la tarifa de la prenda ---
                                     $asignacion = AsignacionTrabajo::find($state);
-                                    if ($asignacion) {
-                                        // Buscamos la prenda ID
+                                    if ($asignacion && $asignacion->ordenItem) {
                                         $prendaId = $asignacion->ordenItem->tipo_prenda_id;
                                         
-                                        // Buscamos tarifa activa
                                         $tarifa = Tarifa::where('tipo_prenda_id', $prendaId)
                                             ->where('estado', true)
                                             ->first();
@@ -78,7 +88,6 @@ class EntregaProduccionResource extends Resource
                                         if ($tarifa) {
                                             $set('tarifa_aplicada', $tarifa->precio_mano_obra);
                                         } else {
-                                            // Alerta visual si no hay tarifa (Opcional)
                                             $set('tarifa_aplicada', 0);
                                         }
                                     }
@@ -96,21 +105,41 @@ class EntregaProduccionResource extends Resource
                                 ->label('Tarifa ($)')
                                 ->numeric()
                                 ->prefix('$')
-                                ->readOnly() // El usuario no debería editar esto, viene de la tabla Tarifas
+                                ->readOnly() // El usuario no la puede editar
                                 ->required()
-                                ->dehydrated(), // Obliga a guardar aunque sea readonly
+                                ->dehydrated(), // Obliga a guardar
 
-                            // 3. CANTIDAD (Calcula el total al escribir)
+                            // 3. CANTIDAD (Con Validación para no pasarse del límite)
                             TextInput::make('cantidad_entregada')
                                 ->label('Cantidad Entregada')
                                 ->numeric()
                                 ->required()
                                 ->minValue(1)
-                                ->live(onBlur: true) // Calcula cuando sales del campo
+                                ->maxValue(function (Get $get) {
+                                    // Tope máximo dinámico
+                                    $id = $get('asignacion_trabajo_id');
+                                    if (!$id) return 9999;
+                                    
+                                    $asignacion = AsignacionTrabajo::find($id);
+                                    $yaEntregado = EntregaProduccion::where('asignacion_trabajo_id', $id)->sum('cantidad_entregada');
+                                    
+                                    return $asignacion->cantidad_asignada - $yaEntregado;
+                                })
+                                ->helperText(function(Get $get) {
+                                    $id = $get('asignacion_trabajo_id');
+                                    if (!$id) return '';
+                                    
+                                    $asignacion = AsignacionTrabajo::find($id);
+                                    $yaEntregado = EntregaProduccion::where('asignacion_trabajo_id', $id)->sum('cantidad_entregada');
+                                    $restante = $asignacion->cantidad_asignada - $yaEntregado;
+                                    
+                                    return "Máximo permitido: {$restante} prendas.";
+                                })
+                                ->live(onBlur: true) 
                                 ->afterStateUpdated(function ($state, Get $get, Set $set) {
                                     $tarifa = (float) $get('tarifa_aplicada');
                                     $cantidad = (float) $state;
-                                    $set('monto_generado', $cantidad * $tarifa);
+                                    $set('monto_generado', round($cantidad * $tarifa, 2));
                                 }),
 
                             // 4. TOTAL (Calculado automático)
@@ -161,14 +190,23 @@ class EntregaProduccionResource extends Resource
                     ->color('success'),
 
                 TextColumn::make('fecha_recibo_real')
-                    ->label('Recibido')
-                    ->dateTime('d/m H:i')
+                    ->label('Fecha Recibido')
+                    ->dateTime('d/m/y H:i')
                     ->sortable(),
+
+                TextColumn::make('createdBy.name')
+                    ->label('Recibido Por')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                // NOTA: Como conectamos esto a la Base de Datos con el Procedure que mueve plata e inventario,
+                // si usas Edit o Delete normales, se va a romper la contabilidad.
+                // Lo dejo comentado por seguridad hasta que hagamos el Procedure de reversa.
+                
+                // EditAction::make(),
+                // DeleteAction::make(),
             ]);
     }
 
@@ -182,7 +220,7 @@ class EntregaProduccionResource extends Resource
         return [
             'index' => Pages\ListEntregaProduccions::route('/'),
             'create' => Pages\CreateEntregaProduccion::route('/create'),
-            'edit' => Pages\EditEntregaProduccion::route('/{record}/edit'),
+            // 'edit' => Pages\EditEntregaProduccion::route('/{record}/edit'),
         ];
     }
 }

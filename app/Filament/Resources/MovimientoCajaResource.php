@@ -19,16 +19,14 @@ class MovimientoCajaResource extends Resource
 {
     protected static ?string $model = MovimientoCaja::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-scale'; // Balanza o Billetera
+    protected static ?string $navigationIcon = 'heroicon-o-scale'; 
     protected static ?string $navigationLabel = 'Movimientos de Caja';
     protected static ?string $modelLabel = 'Movimiento';
-    protected static ?int $navigationSort = 99; // Al final del menú
+    protected static ?int $navigationSort = 99; 
 
-    // --- BLOQUEO TOTAL DE EDICIÓN ---
     public static function canCreate(): bool { return false; }
     public static function canEdit($record): bool { return false; }
     public static function canDelete($record): bool { return false; }
-    // --------------------------------
 
     public static function table(Table $table): Table
     {
@@ -41,18 +39,17 @@ class MovimientoCajaResource extends Resource
                 TextColumn::make('tipo')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'ingreso' => 'success', // Verde
-                        'egreso' => 'danger',   // Rojo
+                        'INGRESO' => 'success', 
+                        'EGRESO' => 'danger',   
                     })
                     ->icon(fn (string $state): string => match ($state) {
-                        'ingreso' => 'heroicon-m-arrow-trending-up',
-                        'egreso' => 'heroicon-m-arrow-trending-down',
+                        'INGRESO' => 'heroicon-m-arrow-trending-up',
+                        'EGRESO' => 'heroicon-m-arrow-trending-down',
                     }),
 
                 TextColumn::make('origen_tipo')
                     ->label('Concepto')
                     ->formatStateUsing(function ($state, $record) {
-                        // Traducimos el nombre técnico a algo legible
                         return match ($state) {
                             'App\Models\Venta' => 'Venta #' . ($record->origen->id ?? 'N/A'),
                             'App\Models\PagoOperario' => 'Pago Nómina',
@@ -69,21 +66,19 @@ class MovimientoCajaResource extends Resource
                 TextColumn::make('monto')
                     ->money('USD')
                     ->weight('bold')
-                    ->alignRight()
-                    // COLUMNA DE SUMATORIA (TOTAL AL PIE DE PAGINA)
-                    // Puedes agregar summarize() si quieres ver el total de la página actual
-                   , 
+                    ->alignRight(), 
 
                 TextColumn::make('creador.name')
                     ->label('Responsable')
                     ->toggleable(isToggledHiddenByDefault: true),
+                
             ])
             ->defaultSort('fecha', 'desc')
             ->filters([
                 SelectFilter::make('tipo')
                     ->options([
-                        'ingreso' => 'Ingresos (Ventas)',
-                        'egreso' => 'Egresos (Gastos)',
+                        'INGRESO' => 'Ingresos (Ventas)',
+                        'EGRESO' => 'Egresos (Gastos)',
                     ]),
                 
                 Filter::make('fecha')
@@ -103,10 +98,7 @@ class MovimientoCajaResource extends Resource
                             );
                     })
             ])
-            ->actions([
-                ViewAction::make(),
-            ])
-            ->bulkActions([]); // Sin acciones masivas
+            ->bulkActions([]); 
     }
 
     public static function getPages(): array

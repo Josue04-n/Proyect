@@ -16,7 +16,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\TextInputColumn; // Para editar precio rápido
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\DeleteAction;
@@ -27,7 +26,7 @@ class PrendaTiendaResource extends Resource
 {
     protected static ?string $model = PrendaTienda::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag'; // Icono de bolsa
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag'; 
 
     protected static ?string $navigationLabel = 'Inventario en Tienda';
 
@@ -112,10 +111,8 @@ class PrendaTiendaResource extends Resource
                     ->weight('bold'),
 
                 // PRECIO EDITABLE EN TABLA (Muy útil para actualizar rápido)
-                TextInputColumn::make('precio_venta')
+                TextColumn::make('precio_venta')
                     ->label('Precio ($)')
-                    ->type('number')
-                    ->rules(['numeric', 'min:0'])
                     ->sortable(),
                 
                 TextColumn::make('createdBy.name')

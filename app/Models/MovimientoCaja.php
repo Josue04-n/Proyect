@@ -21,11 +21,13 @@ class MovimientoCaja extends Model
 
     public function origen(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo(__FUNCTION__, 'origen_tipo', 'origen_id');
     }
     
     public function creador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+        
+    
 }
