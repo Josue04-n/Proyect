@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tarifas', function (Blueprint $table) {
             $table->id(); 
-            $table->string('nombre_prenda'); 
+            $table->foreignId('tipo_prenda_id')->constrained('tipos_prenda');
             $table->decimal('precio_mano_obra', 10, 2); 
             $table->date('vigencia_desde');
             $table->date('vigencia_hasta')->nullable();

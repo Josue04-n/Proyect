@@ -93,12 +93,6 @@ class CuentaResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('updatedBy.name')
-                    ->label('Actualizado Por')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-
                 TextColumn::make('updated_at')
                     ->label('Fecha de Actualización')
                     ->dateTime()

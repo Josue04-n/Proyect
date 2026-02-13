@@ -15,10 +15,8 @@ return new class extends Migration
             $table->id(); 
             $table->foreignId('cliente_id')->constrained('clientes');
             $table->foreignId('contrato_id')->nullable()->constrained('contratos');
-            $table->foreignId('tipo_prenda_id')->constrained('tipos_prenda');
             $table->date('fecha_recepcion'); 
             $table->date('fecha_entrega_estimada'); 
-            $table->integer('cantidad');
             $table->enum('estado', ['pendiente', 'en_proceso', 'parcial', 'finalizada', 'cerrada', 'entregada'])
                   ->default('pendiente');
             $table->text('observacion')->nullable();

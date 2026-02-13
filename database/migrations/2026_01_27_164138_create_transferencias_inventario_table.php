@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('destino_local_id')->constrained('locales');
             $table->foreignId('prenda_tienda_id')->constrained('prendas_tienda');
             $table->integer('cantidad');
+            $table->dateTime('fecha_transferencia');
+            $table->text('observacion')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();

@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up(): void  
     {
         Schema::create('ventas', function (Blueprint $table) {
             $table->id(); 
@@ -21,6 +21,8 @@ return new class extends Migration
             $table->decimal('total', 10, 2);
             $table->enum('estado_pago', ['pagado', 'pendiente', 'anulado'])->default('pagado');
             $table->string('metodo_pago')->default('efectivo');
+            $table->boolean('requiere_factura')->default(false); 
+            $table->string('clave_acceso_sri', 49)->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
