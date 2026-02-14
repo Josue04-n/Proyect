@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'local_id',
         'is_active',
         
     ];
@@ -51,9 +52,11 @@ class User extends Authenticatable
 
     public function canAccessPanel(Panel $panel): bool
     {
-        // Regla: Si es Super Admin O está activo, puede entrar.
-        // (Por ahora retornamos true para no bloquearte en desarrollo)
         return true; 
-        // return $this->hasRole('super_admin') && $this->is_active;
+    }
+
+    public function local()
+    {
+        return $this->belongsTo(Local::class);
     }
 }
