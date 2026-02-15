@@ -132,4 +132,16 @@ class UserResource extends Resource
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if (!$user->hasRole('super_admin')) {
+            return $query->where('local_id', $user->local_id);
+        }
+
+        return $query;
+    }
 }

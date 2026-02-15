@@ -6,11 +6,9 @@ use App\Filament\Resources\VentaResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Models\Venta;
 use Illuminate\Database\QueryException;
 use Filament\Notifications\Notification;
-use Filament\Support\Exceptions\Halt;
 
 class CreateVenta extends CreateRecord
 {
@@ -31,36 +29,47 @@ class CreateVenta extends CreateRecord
 
         $detallesJson = json_encode($detallesProcesados);
 
+        // Obtenemos el local_id: PRIORIDAD 1: Del formulario, PRIORIDAD 2: Del usuario logueado
+        $localId = $data['local_id'] ?? auth()->user()->local_id;
+
         try {
-            $result = DB::selectOne('CALL SP_REGISTRAR_VENTA(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                $data['cliente_id'],
-                $data['subtotal'],
-                $data['descuento'] ?? 0,
-                $data['impuestos'] ?? 0,
-                $data['total'],
-                $data['estado_pago'],
-                $data['metodo_pago'],
-                $data['requiere_factura'] ?? false,
-                auth()->id(),
-                $detallesJson
+            // AHORA SON 11 SIGNOS DE INTERROGACIÓN
+            $result = DB::selectOne('CALL SP_REGISTRAR_VENTA(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                $data['cliente_id'],        // 1
+                $data['subtotal'],          // 2
+                $data['descuento'] ?? 0,    // 3
+                $data['impuestos'] ?? 0,    // 4
+                $data['total'],             // 5
+                $data['estado_pago'],       // 6
+                $data['metodo_pago'],       // 7
+                $data['requiere_factura'] ?? false, // 8
+                auth()->id(),               // 9 (p_user_id)
+                $localId,                   // 10 (p_local_id) <- EL NUEVO PARÁMETRO
+                $detallesJson               // 11 (p_detalles)
             ]);
 
             return Venta::find($result->id);
 
         } catch (QueryException $e) {
-            if (str_contains($e->getMessage(), 'STOCK INSUFICIENTE')) {
-                
+            // Manejo de errores personalizados desde el Procedure (SIGNAL SQLSTATE)
+            $message = $e->getMessage();
+
+            if (str_contains($message, 'STOCK INSUFICIENTE')) {
                 Notification::make()
                     ->title('Error de Stock')
                     ->body('No hay suficiente stock disponible para realizar esta venta.')
-                    ->danger() 
-                    ->persistent() 
+                    ->danger()
+                    ->persistent()
                     ->send();
-
-                $this->halt();
+            } else {
+                Notification::make()
+                    ->title('Error en la base de datos')
+                    ->body('Ocurrió un problema técnico: ' . $message)
+                    ->danger()
+                    ->send();
             }
 
-            throw $e;
+            $this->halt();
         }
     }
 }

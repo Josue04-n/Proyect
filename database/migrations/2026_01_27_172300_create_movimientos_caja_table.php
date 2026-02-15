@@ -16,6 +16,7 @@ return new class extends Migration
             $table->dateTime('fecha');
             $table->enum('tipo', ['ingreso', 'egreso']);
             $table->decimal('monto', 10, 2);
+            $table->foreignId('local_id')->constrained('locales');
             $table->unsignedBigInteger('origen_id')->nullable();
             $table->string('origen_tipo')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
