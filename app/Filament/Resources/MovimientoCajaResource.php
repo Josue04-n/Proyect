@@ -14,6 +14,10 @@ use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Actions\ViewAction;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use App\Models\User;
+use App\Models\Local;
+
 
 class MovimientoCajaResource extends Resource
 {
@@ -46,6 +50,11 @@ class MovimientoCajaResource extends Resource
                         'INGRESO' => 'heroicon-m-arrow-trending-up',
                         'EGRESO' => 'heroicon-m-arrow-trending-down',
                     }),
+
+                TextColumn::make('local.nombre')
+                    ->label('Sucursal')
+                    ->badge()
+                    ->color('gray'),
 
                 TextColumn::make('origen_tipo')
                     ->label('Concepto')
@@ -107,4 +116,17 @@ class MovimientoCajaResource extends Resource
             'index' => Pages\ListMovimientoCajas::route('/'),
         ];
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if (!$user->hasRole('super_admin')) {
+            return $query->where('local_id', $user->local_id);
+        }
+
+        return $query;
+    }
+
 }

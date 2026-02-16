@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Local;
+use App\Models\TipoPrenda;
+use App\Models\User;
 
 class PrendaTienda extends Model
 {
@@ -46,4 +49,6 @@ class PrendaTienda extends Model
         static::creating(function ($model) { $model->created_by = auth()->id(); });
         static::updating(function ($model) { $model->updated_by = auth()->id(); });
     }
+
+
 }

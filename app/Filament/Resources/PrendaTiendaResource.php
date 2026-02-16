@@ -21,6 +21,9 @@ use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteBulkAction;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Columns\BadgeColumn;
 
 class PrendaTiendaResource extends Resource
 {
@@ -47,7 +50,10 @@ class PrendaTiendaResource extends Resource
                                 ->relationship('local', 'nombre')
                                 ->searchable()
                                 ->preload()
-                                ->required(),
+                                ->required()
+                                ->default(auth()->user()->local_id)
+                                ->disabled(!auth()->user()->hasRole('super_admin'))
+                                ->dehydrated(),
 
                             // 2. PRODUCTO
                             Select::make('tipo_prenda_id')
@@ -143,7 +149,8 @@ class PrendaTiendaResource extends Resource
                 // Filtro por Sucursal
                 SelectFilter::make('local_id')
                     ->label('Filtrar por Sucursal')
-                    ->relationship('local', 'nombre'),
+                    ->relationship('local', 'nombre')
+                    ->visible(fn () => auth()->user()->hasRole('super_admin')),
 
                 // Filtro por Tipo de Ropa
                 SelectFilter::make('tipo_prenda_id')
@@ -173,5 +180,17 @@ class PrendaTiendaResource extends Resource
             'create' => Pages\CreatePrendaTienda::route('/create'),
             'edit' => Pages\EditPrendaTienda::route('/{record}/edit'),
         ];
+    }
+
+        public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if (!$user->hasRole('super_admin')) {
+            return $query->where('local_id', $user->local_id);
+        }
+
+        return $query;
     }
 }

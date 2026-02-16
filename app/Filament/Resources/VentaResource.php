@@ -32,6 +32,8 @@ use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteBulkAction;
 
+use Illuminate\Database\Eloquent\Builder;
+
 class VentaResource extends Resource
 {
     protected static ?string $model = Venta::class;
@@ -112,14 +114,21 @@ class VentaResource extends Resource
                                 Grid::make(12)->schema([
                                     
                                     // A. PRODUCTO (5 Columnas - Diseño Limpio)
-                                    Select::make('prenda_tienda_id')
+                                                                        Select::make('prenda_tienda_id')
                                         ->label('Producto')
                                         ->options(function () {
-                                            return PrendaTienda::with('tipoPrenda')
+                                            $user = auth()->user();
+
+                                            return PrendaTienda::query()
+                                                ->with('tipoPrenda')
+                                                // Filtro por el local del usuario logueado
+                                                ->when(!$user->hasRole('super_admin'), function ($query) use ($user) {
+                                                    return $query->where('local_id', $user->local_id);
+                                                })
                                                 ->get()
                                                 ->mapWithKeys(function ($item) {
-                                                    // Solo mostramos nombre, talla y color. Nada de stock ni precios.
-                                                    return [$item->id => "{$item->tipoPrenda->nombre} - {$item->talla} {$item->color}"];
+                                                    // Opcional: puedes añadir el stock disponible para que el vendedor esté informado
+                                                    return [$item->id => "{$item->tipoPrenda->nombre} - {$item->talla} {$item->color} (Stock: {$item->stock_actual})"];
                                                 });
                                         })
                                         ->searchable()
@@ -311,4 +320,17 @@ class VentaResource extends Resource
             'edit' => Pages\EditVenta::route('/{record}/edit'),
         ];
     }
+
+    public static function getEloquentQuery(): Builder
+{
+    $query = parent::getEloquentQuery();
+    $user = auth()->user();
+
+    if (!$user->hasRole('super_admin')) {
+        return $query->where('local_id', $user->local_id);
+    }
+
+    return $query;
+}
+    
 }

@@ -22,6 +22,9 @@ use App\Models\Configuracion;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\HtmlString; 
 
+use App\Filament\Widgets\VentasSucursalChart;
+use App\Filament\Widgets\TopClientesChart;
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -72,6 +75,8 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 //Widgets\AccountWidget::class,
                 //Widgets\FilamentInfoWidget::class,
+                VentasSucursalChart::class,
+                TopClientesChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,

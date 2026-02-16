@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('ventas', function (Blueprint $table) {
             $table->id(); 
             $table->foreignId('cliente_id')->constrained('clientes');
+            $table->foreignId('local_id')->constrained('locales');
             $table->dateTime('fecha_emision')->default(now());
             $table->decimal('subtotal', 10, 2);
             $table->decimal('descuento', 10, 2)->default(0); 

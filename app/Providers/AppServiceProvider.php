@@ -20,14 +20,17 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
-    {
-        //
-        Relation::enforceMorphMap([
-            'App\Models\PagoOperario' => 'App\Models\PagoOperario',
-            'App\Models\Venta' => 'App\Models\Venta',
-        ]);
+public function boot(): void
+{
+    Relation::enforceMorphMap([
+        'user'          => 'App\Models\User',
+        'pago_operario' => 'App\Models\PagoOperario',
+        'venta'         => 'App\Models\Venta',
+        // Agrega aquí cualquier otro modelo que use relaciones polimórficas
+    ]);
 
-        Venta::observe(VentaObserver::class);
-    }
+    Venta::observe(VentaObserver::class);
+}
+
+    
 }
